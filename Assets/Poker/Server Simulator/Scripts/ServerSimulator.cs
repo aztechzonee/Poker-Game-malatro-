@@ -21,6 +21,7 @@ public class ServerSimulator : MonoBehaviour
     [Space(10), Header("Player")]
     [SerializeField] private int m_MaxPlayersCount =4;
     [SerializeField] private Text m_CurrentPlayerText;
+    [SerializeField] private Text m_CurrentPlayerText1;
     [Space(10), Header("Chips")]
     [SerializeField] private InputField m_PutChipsField;
     [SerializeField] private Button m_BetButton;
@@ -185,6 +186,7 @@ public class ServerSimulator : MonoBehaviour
         m_PlayersCountField.text = playersCount + "";
 
         m_CurrentPlayerText.text = gameStateData.currentPlayerID + "";
+        m_CurrentPlayerText1.text = "Player "+gameStateData.currentPlayerID + " Turn";
         m_PutChipsField.text = gameStateData.ChackCost + "";
 
         if (m_PutCardsOnTableButton.interactable)
@@ -241,6 +243,7 @@ public class ServerSimulator : MonoBehaviour
         m_ServerMessaging.GiveChipsToPlayers(gameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
 
         m_CurrentPlayerText.text = gameStateData.currentPlayerID + "";
+        m_CurrentPlayerText1.text = "Player "+gameStateData.currentPlayerID + " Turn";
         m_ServerMessaging.SetCurrentPlayer(gameStateData.mainPlayerID, serverGame.GameCurrentPlayerAsJSON);
         m_ServerMessaging.OpenTableForPlayersChips(gameStateData.mainPlayerID, serverGame.GameBaseDataAsJSON);
 
@@ -350,6 +353,7 @@ public class ServerSimulator : MonoBehaviour
             serverGame.GameStateData.playersMaxBet = 0;
 
             m_CurrentPlayerText.text = serverGame.GameStateData.currentPlayerID + "";
+            m_CurrentPlayerText1.text = "Player "+serverGame.GameStateData.currentPlayerID + " Turn";
             m_ServerMessaging.PutChipsFromTableToPlayer(serverGame.GameStateData.mainPlayerID, serverGame.GameStateAsJSON);
 
             m_RessetCardsButton.interactable = true;
@@ -501,6 +505,7 @@ public class ServerSimulator : MonoBehaviour
     {
         serverGame.NextPlayer();
         m_CurrentPlayerText.text = serverGame.GameStateData.currentPlayerID + "";
+        m_CurrentPlayerText1.text = "Player "+serverGame.GameStateData.currentPlayerID + " Turn";
         m_PutChipsField.text = serverGame.GameStateData.ChackCost + "";
         m_ServerMessaging.SetCurrentPlayer(serverGame.GameStateData.mainPlayerID, serverGame.GameCurrentPlayerAsJSON);
 
