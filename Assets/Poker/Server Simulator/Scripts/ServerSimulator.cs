@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using UnityEngine.SceneManagement;
+using System.Linq;
 
 public class ServerSimulator : MonoBehaviour
 {
@@ -37,7 +38,7 @@ public class ServerSimulator : MonoBehaviour
     [SerializeField] private Button m_PutCardsOnTableButton;
     [SerializeField] private Button m_ShowCardsButton;
     [SerializeField] private Button m_RessetCardsButton;
-
+    public int turnCount = 0;
 #if UNITY_WEBGL && !UNITY_EDITOR
     private void Awake()
     {
@@ -55,8 +56,6 @@ public class ServerSimulator : MonoBehaviour
         DisableOtherButtons();
 
         gamesDictionary = new Dictionary<int, ServerGame>(0);
-
-      //asad  m_CreateGameButton.onClick.AddListener(CreateGame);
 
         m_SaveGameButton.onClick.AddListener(() =>
         {
@@ -135,9 +134,6 @@ public class ServerSimulator : MonoBehaviour
         int dealerID = Random.Range(0, playersCount);
         ServerGame serverGame = CreateGame(0, playersCount, dealerID);
         SetupGame(serverGame);
-
-
-
 
         serverGame.GameStateData.state = GameState.GivePlayersCards; // update state
         serverGame.GiveCardsToPlayers();  // distribute cards
@@ -221,7 +217,7 @@ public class ServerSimulator : MonoBehaviour
 
         for (int i = 0; i < playersCount; i++)
         {
-            PlayerData playerData = new PlayerData(i, false);
+            PlayerData playerData = new PlayerData(i, false,i.ToString());
             gameStateData.players.Add(playerData);
         }
         gameStateData.currentPlayerID = dealerID + 1 < playersCount ? dealerID + 1 : 0;
@@ -406,12 +402,8 @@ public class ServerSimulator : MonoBehaviour
             StartCoroutine(AutoPlayForAI(serverGame));
         }
     }
-
-
-    
-
     private void OnPlayerChoose(ServerGame serverGame, PlayerChoose playerChoose)
-    {        
+    {
         if (serverGame.GameStateData.step == GameState.GivePlayersChips)
         {
             m_GiveCardsToPlayers.interactable = true;
@@ -435,7 +427,7 @@ public class ServerSimulator : MonoBehaviour
                     StartCoroutine(EnableGiveChipsButton(0.9f));
                 }
             }
-            else 
+            else
             {
                 if ((serverGame.GameStateData.tableCards == null || serverGame.GameStateData.tableCards.Count < 5)
                     && serverGame.GameStateData.step < GameState.ShowPlayersCards)
@@ -463,6 +455,28 @@ public class ServerSimulator : MonoBehaviour
         if (serverGame.GameStateData.currentPlayerID != serverGame.GameStateData.mainPlayerID)
         {
             StartCoroutine(AutoPlayForAI(serverGame));
+        }
+
+        ///Count Turn of each Player
+
+
+        var currentPlayer = serverGame.GameStateData.currentPlayer;
+
+        if (!currentPlayer.fold && !currentPlayer.outOfGame)
+        {
+            if (serverGame.GameStateData.playerTurnCounts.ContainsKey(currentPlayer.id))
+                serverGame.GameStateData.playerTurnCounts[currentPlayer.id]++;
+            else
+                serverGame.GameStateData.playerTurnCounts[currentPlayer.id] = 1;
+        }
+
+        bool allCompleted = serverGame.GameStateData.players
+            .Where(p => !p.fold && !p.outOfGame)
+            .All(p => serverGame.GameStateData.playerTurnCounts.TryGetValue(p.id, out int count) && count >= 5);
+
+        if (allCompleted)
+        {
+            Debug.LogError("✅ All active players completed 5 turns!");
         }
     }
 

@@ -140,7 +140,7 @@ public class GameStateData : GameStateBaseData
 {
     [SerializeField] private PokerGameConfig m_PokerGameConfig;
     [SerializeField] private List<string> cards;
-
+    public Dictionary<string, int> playerTurnCounts = new Dictionary<string, int>();
     public List<string> Cards { get; private set; }
     public List<string> tableCards;
     public ChipsColumn[] chips;
@@ -352,6 +352,7 @@ public enum GameState
 [Serializable]
 public class PlayerData
 {
+    public string id; 
     public string playerName;
     public int playerID;
     public List<string> cards;
@@ -361,7 +362,7 @@ public class PlayerData
     public bool outOfGame;
     public bool fold;
     public int prizeCost;
-
+    public int turnCount;
     public bool isBot;
 
     public bool Choosed { get; internal set; }
@@ -373,11 +374,12 @@ public class PlayerData
         this.isBot = isBot;
     }
 
-    public PlayerData(int playerID, bool isBot)
+    public PlayerData(int playerID, bool isBot,string id)
     {
         this.playerName = "Player " + playerID;
         this.playerID = playerID;
         this.isBot = isBot;
+        this.id = id;
     }
 
     public PlayerData(PlayerData playerData)
