@@ -353,7 +353,7 @@ public class ServerSimulator : MonoBehaviour
             serverGame.GameStateData.playersMaxBet = 0;
 
             m_CurrentPlayerText.text = serverGame.GameStateData.currentPlayerID + "";
-            m_CurrentPlayerText1.text = "Player "+serverGame.GameStateData.currentPlayerID + " Turn";
+            m_CurrentPlayerText1.text = "Player " + serverGame.GameStateData.currentPlayerID + " Turn";
             m_ServerMessaging.PutChipsFromTableToPlayer(serverGame.GameStateData.mainPlayerID, serverGame.GameStateAsJSON);
 
             m_RessetCardsButton.interactable = true;
@@ -398,7 +398,17 @@ public class ServerSimulator : MonoBehaviour
                 m_ServerMessaging.EndGame(gameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
             }
         });
+
+
+        if (serverGame.GameStateData.currentPlayerID != serverGame.GameStateData.mainPlayerID)
+        {
+            Debug.LogError("Start Turn :");
+            StartCoroutine(AutoPlayForAI(serverGame));
+        }
     }
+
+
+    
 
     private void OnPlayerChoose(ServerGame serverGame, PlayerChoose playerChoose)
     {        
@@ -517,7 +527,7 @@ public class ServerSimulator : MonoBehaviour
     }
     private IEnumerator AutoPlayForAI(ServerGame serverGame)
     {
-        yield return new WaitForSeconds(1f); // small delay to simulate thinking time
+        yield return new WaitForSeconds(3f); // small delay to simulate thinking time
 
         var currentPlayer = serverGame.GameStateData.currentPlayer;
 
