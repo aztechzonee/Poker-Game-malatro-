@@ -55,7 +55,7 @@ public class ServerSimulator : MonoBehaviour
 
         gamesDictionary = new Dictionary<int, ServerGame>(0);
 
-        m_CreateGameButton.onClick.AddListener(CreateGame);
+      //asad  m_CreateGameButton.onClick.AddListener(CreateGame);
 
         m_SaveGameButton.onClick.AddListener(() =>
         {
@@ -77,6 +77,8 @@ public class ServerSimulator : MonoBehaviour
         {
             CreateGame(0, gameStateData);
         }
+        yield return new WaitForSeconds(1);
+        CreateGame();
     }
 
     private void TriggerPlayerChooseButtons(bool isOn)
@@ -434,7 +436,10 @@ public class ServerSimulator : MonoBehaviour
         {
             SetNextPlayer(serverGame);
         }
-        
+        if (serverGame.GameStateData.currentPlayerID != serverGame.GameStateData.mainPlayerID)
+        {
+            StartCoroutine(AutoPlayForAI(serverGame));
+        }
     }
 
     private void OnUserChooseButton(PlayerChoose playerChoose, int cost)
@@ -488,8 +493,47 @@ public class ServerSimulator : MonoBehaviour
         m_CurrentPlayerText.text = serverGame.GameStateData.currentPlayerID + "";
         m_PutChipsField.text = serverGame.GameStateData.ChackCost + "";
         m_ServerMessaging.SetCurrentPlayer(serverGame.GameStateData.mainPlayerID, serverGame.GameCurrentPlayerAsJSON);
-    }
 
+        // Check if the current player is AI (not main player)
+        if (serverGame.GameStateData.currentPlayerID != serverGame.GameStateData.mainPlayerID)
+        {
+            StartCoroutine(AutoPlayForAI(serverGame));
+        }
+    }
+    private IEnumerator AutoPlayForAI(ServerGame serverGame)
+    {
+        yield return new WaitForSeconds(1f); // small delay to simulate thinking time
+
+        var currentPlayer = serverGame.GameStateData.currentPlayer;
+
+        if (currentPlayer.outOfGame || currentPlayer.fold)
+        {
+            // If AI player is out or folded, just move on
+            SetNextPlayer(serverGame);
+            yield break;
+        }
+
+        // Simple AI logic: random choice from available actions
+        PlayerChoose aiChoice = PlayerChoose.Check;
+        int betAmount = m_PutChipsField.text != "" ? int.Parse(m_PutChipsField.text) : 10;
+
+        // Example: if bet is required, randomly decide between Call or Fold or Bet
+        if (serverGame.GameStateData.state == GameState.PlayersBet)
+        {
+            // Random AI decision (can be improved with your own logic)
+            int decision = Random.Range(0, 4);
+            switch (decision)
+            {
+                case 0: aiChoice = PlayerChoose.Check; break;
+                case 1: aiChoice = PlayerChoose.Call; break;
+                case 2: aiChoice = PlayerChoose.Bet; betAmount = Mathf.Max(10, betAmount); break;
+                case 3: aiChoice = PlayerChoose.Fold; break;
+            }
+        }
+
+        // Call your existing method for AI choice
+        OnUserChoose(serverGame.ID, aiChoice, betAmount);
+    }
     private string GetGameSavePath(int gameID)
     {
         return Application.dataPath.Replace("Assets", "") + "game_" + gameID + ".text";
