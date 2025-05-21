@@ -124,9 +124,9 @@ public class ServerSimulator : MonoBehaviour
     {
         TriggerPlayerChooseButtons(true);
         m_CreateGameButton.interactable = false;
-       
+
         int.TryParse(m_PlayersCountField.text, out int playersCount);
-        playersCount = Mathf.Clamp(playersCount, 3, m_MaxPlayersCount);
+        playersCount = Mathf.Clamp(playersCount, 4, m_MaxPlayersCount);
         m_PlayersCountField.text = playersCount + "";
 
         m_ServerMessaging.OnUserChoose += OnUserChoose;
@@ -134,6 +134,16 @@ public class ServerSimulator : MonoBehaviour
         int dealerID = Random.Range(0, playersCount);
         ServerGame serverGame = CreateGame(0, playersCount, dealerID);
         SetupGame(serverGame);
+
+
+
+
+        serverGame.GameStateData.state = GameState.GivePlayersCards; // update state
+        serverGame.GiveCardsToPlayers();  // distribute cards
+        m_ServerMessaging.GiveCardsToPlayers(serverGame.GameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
+
+        // Disable card dealing button to avoid multiple dealing
+        m_GiveCardsToPlayers.interactable = false;
     }
 
     private void CreateGame(int id, GameStateData gameStateData)
@@ -189,7 +199,7 @@ public class ServerSimulator : MonoBehaviour
                 m_PutChipsFromTableToPlayerIDField.text = gameStateData.winners[0].id + "";
             }
             m_PutChipsFromTableToPlayerField.text = gameStateData.bet + "";
-        }        
+        }
     }
 
     private ServerGame CreateGame(int id, int playersCount, int dealerID)
@@ -241,7 +251,7 @@ public class ServerSimulator : MonoBehaviour
     {
         GameStateData gameStateData = serverGame.GameStateData;
         int playersCount = gameStateData.players.Count;
-       
+
         m_BetButton.onClick.AddListener(() =>
         {
             OnPlayerChoose(serverGame, PlayerChoose.Bet);
@@ -358,7 +368,7 @@ public class ServerSimulator : MonoBehaviour
             serverGame.GameStateData.step = GameState.GivePlayersChips;
 
             serverGame.GameStateData.dealerID++;
-            if(serverGame.GameStateData.dealerID >= playersCount)
+            if (serverGame.GameStateData.dealerID >= playersCount)
             {
                 serverGame.GameStateData.dealerID = 0;
             }

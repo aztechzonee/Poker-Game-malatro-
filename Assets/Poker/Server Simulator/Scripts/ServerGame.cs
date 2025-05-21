@@ -330,7 +330,7 @@ public class ServerGame : MonoBehaviour
             if (!player.outOfGame)
             {
                 player.cards = new List<string>(0);
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     int cardIndex = UnityEngine.Random.Range(0, m_GameStateData.Cards.Count);
                     string cardName = m_GameStateData.Cards[cardIndex];
