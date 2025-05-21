@@ -478,6 +478,14 @@ public class ServerSimulator : MonoBehaviour
         {
             Debug.LogError("✅ All active players completed 5 turns!");
         }
+
+        int activePlayersCount = serverGame.GameStateData.players
+    .Count(p => !p.fold && !p.outOfGame);
+
+        if (activePlayersCount == 1)
+        {
+            Debug.LogError("⚠️ Only one player active!");
+        }
     }
 
     private void OnUserChooseButton(PlayerChoose playerChoose, int cost)
