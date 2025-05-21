@@ -111,6 +111,14 @@ public class CardManager : ICardManager
 
     private void MoveCard(Vector3 position, Quaternion rotation)
     {
+        GameObject card = transform.parent.transform.parent.transform.parent.gameObject;
+        if (card.name.Equals("PlayerSeat_3"))
+        {
+            GameObject cardParent = card.transform.GetChild(1).gameObject;
+           cardParent.transform.localPosition = new Vector3(0.286f, 0, 0.181f);
+           cardParent.transform.localEulerAngles = new Vector3(0, -27.515f, 0);
+        }
+
         transform.position = position;
         m_CarPivot.rotation = rotation;
 
