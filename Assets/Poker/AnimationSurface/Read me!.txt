@@ -1,0 +1,1 @@
+«AnimationCurve3» and «AnimationSurface» can be used for programming animation surfaces , curve smoothing and camera motion.
