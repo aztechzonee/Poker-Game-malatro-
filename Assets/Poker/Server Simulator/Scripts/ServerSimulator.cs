@@ -619,21 +619,18 @@ public class ServerSimulator : MonoBehaviour
             serverGame.GameStateData.PlayerPredictions[currentPlayerId] = prediction;
 
             Debug.Log($"🧑 Player {currentPlayerId} predicted {prediction}");
-            Debug.LogError($"🧑 Player main id {gameStateData.mainPlayerID} predicted {prediction}");
 
-            if (gameStateData.currentPlayerID != 1)
-            {
-                EnablePredictionUI(false);
-                StartCoroutine(ProcessAllAIPredictions(serverGame));
-            }
-            else
-            {
-                EnablePredictionUI(true);
-            }
+            EnablePredictionUI(false);
+
+            // ✅ Advance to the next player
+            gameStateData.currentPlayerID = (gameStateData.currentPlayerID + 1) % 4;
+
+            // ✅ Start AI prediction phase
+            StartCoroutine(ProcessAllAIPredictions(serverGame));
         });
 
         // 🔁 If first turn is AI, begin AI prediction
-        if (gameStateData.currentPlayerID != gameStateData.mainPlayerID)
+        if (gameStateData.currentPlayerID != 1)
         {
             EnablePredictionUI(false);
             StartCoroutine(DoAIPredictionsWithDelay(serverGame));
@@ -659,7 +656,7 @@ public class ServerSimulator : MonoBehaviour
     }
     private IEnumerator DoAIPredictionsWithDelay(ServerGame serverGame)
     {
-        yield return new WaitForSeconds(1f); // Simulate AI thinking
+        yield return new WaitForSeconds(3f); // Simulate AI thinking
 
         var gameStateData = serverGame.GameStateData;
         int aiPlayerId = gameStateData.currentPlayerID;
@@ -681,6 +678,10 @@ public class ServerSimulator : MonoBehaviour
     }
     private void EndPredictionPhase(ServerGame serverGame)
     {
+        if (serverGame.GameStateData.TrumpPredictionEnded)
+            return;
+
+        serverGame.GameStateData.TrumpPredictionEnded = true;
         m_PredictionStatusText.text = "✅ Trump Predictions Complete!";
         m_PredictionStatusText.gameObject.SetActive(true);
 
@@ -805,7 +806,7 @@ public class ServerSimulator : MonoBehaviour
 
     private IEnumerator ProcessAIBetsWithDelay(ServerGame serverGame)
     {
-        yield return new WaitForSeconds(1f); // simulate AI thinking
+        yield return new WaitForSeconds(3f); // simulate AI thinking with 3 seconds
 
         var gameStateData = serverGame.GameStateData;
         int aiPlayerId = gameStateData.currentPlayerID;
@@ -813,7 +814,7 @@ public class ServerSimulator : MonoBehaviour
         if (!gameStateData.PlayerBets.ContainsKey(aiPlayerId))
         {
             // Simple AI logic for betting: pick random option or fixed amount
-            int[] possibleBets = { 5, 10, 20, 50, 100, int.MaxValue };
+            int[] possibleBets = { 5, 10, 20, 50, 100 };
             int bet = possibleBets[UnityEngine.Random.Range(0, possibleBets.Length)];
             gameStateData.PlayerBets[aiPlayerId] = bet;
             Debug.Log($"AI Player {aiPlayerId} bet ${bet}");
@@ -829,8 +830,8 @@ public class ServerSimulator : MonoBehaviour
     }
     private void EndDollarBattingPase(ServerGame serverGame)
     {
-        Debug.Log("Betting phase complete!");
-        ShowBettingUI(false);
+        Debug.LogError("Betting phase complete!......");
+        EnableDollarBettingUI(false);
 
         // Continue to next phase (e.g., dealing cards or starting tricks)
         serverGame.GameStateData.state = GameState.NextPhaseAfterBetting;

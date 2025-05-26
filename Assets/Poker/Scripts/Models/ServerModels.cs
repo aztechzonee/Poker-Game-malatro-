@@ -156,6 +156,7 @@ public class GameStateData : GameStateBaseData
 
     public Suit TrumpSuit = Suit.None;  // the trump suit for the round
     public Dictionary<int, int> PlayerPredictions = new Dictionary<int, int>();
+    public bool TrumpPredictionEnded = false;
 
     public Dictionary<int, int> PlayerBets = new Dictionary<int, int>();///player Bets
 
