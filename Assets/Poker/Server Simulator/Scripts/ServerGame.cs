@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class ServerGame : MonoBehaviour
 {
@@ -40,23 +41,14 @@ public class ServerGame : MonoBehaviour
 
     public void NextPlayer()
     {
-        int chackCount = 0;
-        do
-        {
-            chackCount++;
-            if (m_GameStateData.currentPlayerID + 1 < m_GameStateData.players.Count)
-            {
-                m_GameStateData.currentPlayerID++;
-            }
-            else
-            {
-                m_GameStateData.currentPlayerID = 0;
-            }
-            m_GameStateData.currentPlayer = m_GameStateData.players[m_GameStateData.currentPlayerID];
+        var players = GameStateData.players;
 
-        }
-        while (chackCount < m_GameStateData.players.Count && (m_GameStateData.currentPlayer.outOfGame ||
-        m_GameStateData.currentPlayer.fold || m_GameStateData.currentPlayer.sum == 0));
+        int currentIndex = players.FindIndex(p => int.Parse(p.id) == GameStateData.currentPlayerID);
+        int nextIndex = (currentIndex + 1) % players.Count;
+
+        GameStateData.currentPlayerID = int.Parse(players[nextIndex].id);
+
+        Debug.Log($"🔁 NextPlayer called. New currentPlayerID: {GameStateData.currentPlayerID}");
     }
 
     public void GiveChipsToPlayers()
