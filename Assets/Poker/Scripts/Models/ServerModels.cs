@@ -157,6 +157,8 @@ public class GameStateData : GameStateBaseData
     public Suit TrumpSuit = Suit.None;  // the trump suit for the round
     public Dictionary<int, int> PlayerPredictions = new Dictionary<int, int>();
 
+    public Dictionary<int, int> PlayerBets = new Dictionary<int, int>();///player Bets
+
     public bool GameIsEnded()
     {
         int inGamePlayersCount = 0;
@@ -352,6 +354,7 @@ public enum GameState
     PutTableCards,
     ShowPlayersCards,
     GiveWinnersPrize,
+    NextPhaseAfterBetting,
     Ended
 }
 

@@ -23,9 +23,14 @@ public class ServerSimulator : MonoBehaviour
     [SerializeField] private Button m_SaveGameButton;
     [SerializeField] private Button m_DeleteGameButton;
 
+    [Space(2), Header("Trump Card Prediction")]
     [SerializeField] private TMP_Dropdown m_TrumpSuitDropdown;
     [SerializeField] private InputField m_PredictionInput;
     [SerializeField] private Button m_SubmitPredictionButton;
+    [Space(2), Header("Batting $ Prediction")]
+    [SerializeField] private TMP_Dropdown m_DollartDropdown;
+    [SerializeField] private Button m_SubmitBetButton;
+
 
     [Space(10), Header("Player")]
     [SerializeField] private int m_MaxPlayersCount = 4;
@@ -676,7 +681,7 @@ public class ServerSimulator : MonoBehaviour
     }
     private void EndPredictionPhase(ServerGame serverGame)
     {
-        m_PredictionStatusText.text = "✅ Predictions Complete!";
+        m_PredictionStatusText.text = "✅ Trump Predictions Complete!";
         m_PredictionStatusText.gameObject.SetActive(true);
 
         m_TrumpSuitDropdown.interactable = false;
@@ -686,7 +691,10 @@ public class ServerSimulator : MonoBehaviour
         ShowBettingUI(true);
         serverGame.GameStateData.state = GameState.PlayersBet;
 
-        Debug.LogError("Predictions are completed ");
+        Debug.LogError("Trump Predictions are completed ");
+        Debug.LogError("------------------------------");
+
+        StartDollarBettingPhase(serverGame);
     }
     private void UpdateCurrentPlayerUI(int currentId)
     {
@@ -713,5 +721,144 @@ public class ServerSimulator : MonoBehaviour
         // Now it's main player's turn
         EnablePredictionUI(true);
         UpdateCurrentPlayerUI(serverGame.GameStateData.currentPlayerID);
+    }
+
+    private void StartDollarBettingPhase(ServerGame serverGame)
+    {
+        Debug.Log("Start Dollar Batting...");
+
+        m_PredictionStatusText.text = "Dollar Batting";
+
+        serverGame.GameStateData.state = GameState.PlayersBet;
+
+        TriggerPlayerChooseButtons(false);
+        UpdateCurrentPlayerUI(serverGame.GameStateData.currentPlayerID);
+
+        m_SubmitBetButton.onClick.RemoveAllListeners();
+        m_SubmitBetButton.onClick.AddListener(() =>
+        {
+            int currentPlayerId = serverGame.GameStateData.currentPlayerID;
+            int betAmount = GetBetAmountFromDropdown();
+
+            if (betAmount <= 0)
+            {
+                Debug.LogWarning("Invalid bet amount");
+                return;
+            }
+
+            if (serverGame.GameStateData.PlayerBets == null)
+                serverGame.GameStateData.PlayerBets = new Dictionary<int, int>();
+
+            serverGame.GameStateData.PlayerBets[currentPlayerId] = betAmount;
+            Debug.Log($"Player {currentPlayerId} bet ${betAmount}");
+
+            if (AllPlayersPlacedBets(serverGame))
+            {
+                EndDollarBettingPhase(serverGame);
+            }
+            else
+            {
+                SetNextPlayer(serverGame);
+                EnableDollarBettingUI(IsCurrentPlayerHuman(serverGame));
+            }
+
+        });
+
+        Debug.Log("IsCurrentPlayerHuman" + IsCurrentPlayerHuman(serverGame));
+
+        if (IsCurrentPlayerHuman(serverGame))
+        {
+            EnableDollarBettingUI(true);
+        }
+        else
+        {
+            EnableDollarBettingUI(false);
+            StartCoroutine(ProcessAIBetsWithDelay(serverGame));
+        }
+    }
+    private int GetBetAmountFromDropdown()
+    {
+        string selected = m_DollartDropdown.options[m_DollartDropdown.value].text;
+
+        if (selected == "All-In")
+        {
+            return int.MaxValue; // or a special value representing All-In
+        }
+        else if (int.TryParse(selected, out int bet))
+        {
+            return bet;
+        }
+        return 0;
+    }
+
+    private bool AllPlayersPlacedBets(ServerGame serverGame)
+    {
+        var players = serverGame.GameStateData.players;
+        foreach (var player in players)
+        {
+            int playerId = int.Parse(player.id);
+            if (!serverGame.GameStateData.PlayerBets.ContainsKey(playerId))
+                return false;
+        }
+        return true;
+    }
+
+    private IEnumerator ProcessAIBetsWithDelay(ServerGame serverGame)
+    {
+        yield return new WaitForSeconds(1f); // simulate AI thinking
+
+        var gameStateData = serverGame.GameStateData;
+        int aiPlayerId = gameStateData.currentPlayerID;
+
+        if (!gameStateData.PlayerBets.ContainsKey(aiPlayerId))
+        {
+            // Simple AI logic for betting: pick random option or fixed amount
+            int[] possibleBets = { 5, 10, 20, 50, 100, int.MaxValue };
+            int bet = possibleBets[UnityEngine.Random.Range(0, possibleBets.Length)];
+            gameStateData.PlayerBets[aiPlayerId] = bet;
+            Debug.Log($"AI Player {aiPlayerId} bet ${bet}");
+        }
+
+        if (AllPlayersPlacedBets(serverGame))
+        {
+            EndDollarBattingPase(serverGame);
+            yield break;
+        }
+
+        SetNextPlayer(serverGame);
+    }
+    private void EndDollarBattingPase(ServerGame serverGame)
+    {
+        Debug.Log("Betting phase complete!");
+        ShowBettingUI(false);
+
+        // Continue to next phase (e.g., dealing cards or starting tricks)
+        serverGame.GameStateData.state = GameState.NextPhaseAfterBetting;
+
+        // Your next game logic here...
+    }
+    private void EnableDollarBettingUI(bool enable)
+    {
+        m_DollartDropdown.gameObject.SetActive(enable);
+        m_SubmitBetButton.gameObject.SetActive(enable);
+    }
+
+    private bool IsCurrentPlayerHuman(ServerGame serverGame)
+    {
+        int currentPlayerId = serverGame.GameStateData.currentPlayerID;
+
+        // Player with ID == 1 is human, others are AI
+        return currentPlayerId == 1;
+    }
+
+    private void EndDollarBettingPhase(ServerGame serverGame)
+    {
+        Debug.Log("Dollar Betting phase complete!");
+        ShowBettingUI(false);
+
+        // Continue to next phase (e.g., dealing cards or starting tricks)
+        serverGame.GameStateData.state = GameState.NextPhaseAfterBetting;
+
+        // Your next game logic here...
     }
 }
