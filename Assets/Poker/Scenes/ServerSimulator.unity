@@ -1148,7 +1148,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 328674951}
   m_OnClick:
     m_PersistentCalls:
@@ -1639,7 +1639,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 515534264}
   m_Template: {fileID: 1736543447}
   m_CaptionText: {fileID: 1367335130}
@@ -5553,6 +5553,7 @@ MonoBehaviour:
       toDealerChips: []
     winnerPrize: []
     TrumpSuit: 0
+    TrumpPredictionEnded: 0
   m_ServerMessaging: {fileID: 1313514006}
   m_GameLogicManager: {fileID: 1313514007}
   m_PlayersCountField: {fileID: 1054181427}
@@ -5563,7 +5564,9 @@ MonoBehaviour:
   m_PredictionInput: {fileID: 1022952458}
   m_SubmitPredictionButton: {fileID: 1967884047}
   m_DollartDropdown: {fileID: 515534263}
-  m_SubmitBetButton: {fileID: 328674950}
+  submitDollarBet: {fileID: 328674950}
+  trumpPredictionPanel: {fileID: 1889958244}
+  dollarBetPanel: {fileID: 447334927}
   m_MaxPlayersCount: 4
   m_CurrentPlayerText: {fileID: 1822126531}
   m_CurrentPlayerText1: {fileID: 1795882330}

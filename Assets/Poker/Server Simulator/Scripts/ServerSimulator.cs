@@ -29,9 +29,10 @@ public class ServerSimulator : MonoBehaviour
     [SerializeField] private Button m_SubmitPredictionButton;
     [Space(2), Header("Batting $ Prediction")]
     [SerializeField] private TMP_Dropdown m_DollartDropdown;
-    [SerializeField] private Button m_SubmitBetButton;
+    [SerializeField] private Button submitDollarBet;
 
-
+    [SerializeField] private GameObject trumpPredictionPanel = null;
+    [SerializeField] private GameObject dollarBetPanel = null;
     [Space(10), Header("Player")]
     [SerializeField] private int m_MaxPlayersCount = 4;
     [SerializeField] private Text m_CurrentPlayerText;
@@ -694,7 +695,7 @@ public class ServerSimulator : MonoBehaviour
 
         Debug.LogError("Trump Predictions are completed ");
         Debug.LogError("------------------------------");
-
+        trumpPredictionPanel.SetActive(false);
         StartDollarBettingPhase(serverGame);
     }
     private void UpdateCurrentPlayerUI(int currentId)
@@ -735,8 +736,8 @@ public class ServerSimulator : MonoBehaviour
         TriggerPlayerChooseButtons(false);
         UpdateCurrentPlayerUI(serverGame.GameStateData.currentPlayerID);
 
-        m_SubmitBetButton.onClick.RemoveAllListeners();
-        m_SubmitBetButton.onClick.AddListener(() =>
+        submitDollarBet.onClick.RemoveAllListeners();
+        submitDollarBet.onClick.AddListener(() =>
         {
             int currentPlayerId = serverGame.GameStateData.currentPlayerID;
             int betAmount = GetBetAmountFromDropdown();
@@ -762,10 +763,9 @@ public class ServerSimulator : MonoBehaviour
                 SetNextPlayer(serverGame);
                 EnableDollarBettingUI(IsCurrentPlayerHuman(serverGame));
             }
-
+            Debug.LogError("my Player put dollar bet"+ AllPlayersPlacedBets(serverGame));
         });
 
-        Debug.Log("IsCurrentPlayerHuman" + IsCurrentPlayerHuman(serverGame));
 
         if (IsCurrentPlayerHuman(serverGame))
         {
@@ -806,42 +806,43 @@ public class ServerSimulator : MonoBehaviour
 
     private IEnumerator ProcessAIBetsWithDelay(ServerGame serverGame)
     {
-        yield return new WaitForSeconds(3f); // simulate AI thinking with 3 seconds
+        yield return new WaitForSeconds(3f); // simulate AI thinking
 
         var gameStateData = serverGame.GameStateData;
         int aiPlayerId = gameStateData.currentPlayerID;
 
         if (!gameStateData.PlayerBets.ContainsKey(aiPlayerId))
         {
-            // Simple AI logic for betting: pick random option or fixed amount
+            // Simple AI logic for betting
             int[] possibleBets = { 5, 10, 20, 50, 100 };
             int bet = possibleBets[UnityEngine.Random.Range(0, possibleBets.Length)];
             gameStateData.PlayerBets[aiPlayerId] = bet;
-            Debug.Log($"AI Player {aiPlayerId} bet ${bet}");
+            Debug.Log($"🤖 AI Player {aiPlayerId} bet ${bet}");
         }
 
         if (AllPlayersPlacedBets(serverGame))
         {
-            EndDollarBattingPase(serverGame);
+            EndDollarBettingPhase(serverGame);
             yield break;
         }
 
         SetNextPlayer(serverGame);
-    }
-    private void EndDollarBattingPase(ServerGame serverGame)
-    {
-        Debug.LogError("Betting phase complete!......");
-        EnableDollarBettingUI(false);
 
-        // Continue to next phase (e.g., dealing cards or starting tricks)
-        serverGame.GameStateData.state = GameState.NextPhaseAfterBetting;
-
-        // Your next game logic here...
+        // 👉 RESTART AI betting if next is also AI
+        if (!IsCurrentPlayerHuman(serverGame))
+        {
+            StartCoroutine(ProcessAIBetsWithDelay(serverGame));
+        }
+        else
+        {
+            Debug.LogError("Human");
+            EnableDollarBettingUI(true);
+        }
     }
     private void EnableDollarBettingUI(bool enable)
     {
         m_DollartDropdown.gameObject.SetActive(enable);
-        m_SubmitBetButton.gameObject.SetActive(enable);
+        submitDollarBet.gameObject.SetActive(enable);
     }
 
     private bool IsCurrentPlayerHuman(ServerGame serverGame)
@@ -855,8 +856,8 @@ public class ServerSimulator : MonoBehaviour
     private void EndDollarBettingPhase(ServerGame serverGame)
     {
         Debug.Log("Dollar Betting phase complete!");
+        Debug.LogError("------------------------------");
         ShowBettingUI(false);
-
         // Continue to next phase (e.g., dealing cards or starting tricks)
         serverGame.GameStateData.state = GameState.NextPhaseAfterBetting;
 
