@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -239,11 +240,11 @@ public class ServerSimulator : MonoBehaviour
         gameStateData.step =  GameState.Start;
         m_ServerMessaging.StartGame(gameStateData.mainPlayerID, serverGame.GameStateAsJSON);
 
-        serverGame.GiveChipsToPlayers();
-        serverGame.ResetChipsOnTable();
-        gameStateData.step =  GameState.GivePlayersChips;
-        gameStateData.state = GameState.GivePlayersChips;
-        m_ServerMessaging.GiveChipsToPlayers(gameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
+      // asad //serverGame.GiveChipsToPlayers();
+      //  serverGame.ResetChipsOnTable();
+     //   gameStateData.step =  GameState.GivePlayersChips;
+     //  gameStateData.state = GameState.GivePlayersChips;
+     //   m_ServerMessaging.GiveChipsToPlayers(gameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
 
         m_CurrentPlayerText.text = gameStateData.currentPlayerID + "";
         m_CurrentPlayerText1.text = "Player "+gameStateData.currentPlayerID + " Turn";
@@ -257,6 +258,9 @@ public class ServerSimulator : MonoBehaviour
     {
         GameStateData gameStateData = serverGame.GameStateData;
         int playersCount = gameStateData.players.Count;
+
+
+        ShowBettingUI(false);
 
         m_BetButton.onClick.AddListener(() =>
         {
@@ -339,7 +343,7 @@ public class ServerSimulator : MonoBehaviour
             m_PutChipsFromTableToPlayerField.text = gameStateData.bet + "";
         });
 
-        StartTrumpAndPredictionPhase(serverGame);
+        StartTrumpAndPredictionPhase(serverGame, gameStateData);
 
         m_PutChipsFromTableToPlayerButton.onClick.AddListener(() =>
         {
@@ -543,6 +547,8 @@ public class ServerSimulator : MonoBehaviour
 
     private void SetNextPlayer(ServerGame serverGame)
     {
+        Debug.LogError("Next Player please");
+
         serverGame.NextPlayer();
         m_CurrentPlayerText.text = serverGame.GameStateData.currentPlayerID + "";
         m_CurrentPlayerText1.text = "Player "+serverGame.GameStateData.currentPlayerID + " Turn";
@@ -635,7 +641,7 @@ public class ServerSimulator : MonoBehaviour
         return null;
 #endif
     }
-    private void StartTrumpAndPredictionPhase(ServerGame serverGame)
+    private void StartTrumpAndPredictionPhase(ServerGame serverGame, GameStateData gameStateData)
     {
         serverGame.GameStateData.state = GameState.TrumpSelection;
         TriggerPlayerChooseButtons(false);
@@ -668,11 +674,27 @@ public class ServerSimulator : MonoBehaviour
                 m_SubmitPredictionButton.interactable = false;
 
                 // Proceed to next step (e.g., GivePlayersChips)
+                serverGame.GiveChipsToPlayers();
                 serverGame.GameStateData.state = GameState.GivePlayersChips;
+                serverGame.ResetChipsOnTable();
+                gameStateData.step = GameState.GivePlayersChips;
+                gameStateData.state = GameState.GivePlayersChips;
+                m_ServerMessaging.GiveChipsToPlayers(gameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
+
+
                 TriggerPlayerChooseButtons(true);
                 m_GiveCardsToPlayers.interactable = true;
+
+
+
+                serverGame.GameStateData.state = GameState.PlayersBet;
+                ShowBettingUI(true);
             }
         });
+    }
+    void ShowBettingUI(bool result)
+    {
+        Debug.LogError("Show Batting UI");
     }
 
     private bool AllPlayersMadePredictions(ServerGame serverGame)
