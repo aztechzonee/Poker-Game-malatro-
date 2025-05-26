@@ -1,10 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
 using System.IO;
-using UnityEngine.SceneManagement;
 using System.Linq;
+using TMPro;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using static ChipsColumn;
 
 public class ServerSimulator : MonoBehaviour
 {
@@ -19,6 +21,11 @@ public class ServerSimulator : MonoBehaviour
     [SerializeField] private Button m_CreateGameButton;
     [SerializeField] private Button m_SaveGameButton;
     [SerializeField] private Button m_DeleteGameButton;
+
+    [SerializeField] private TMP_Dropdown m_TrumpSuitDropdown;
+    [SerializeField] private InputField m_PredictionInput;
+    [SerializeField] private Button m_SubmitPredictionButton;
+
     [Space(10), Header("Player")]
     [SerializeField] private int m_MaxPlayersCount =4;
     [SerializeField] private Text m_CurrentPlayerText;
@@ -332,6 +339,8 @@ public class ServerSimulator : MonoBehaviour
             m_PutChipsFromTableToPlayerField.text = gameStateData.bet + "";
         });
 
+        StartTrumpAndPredictionPhase(serverGame);
+
         m_PutChipsFromTableToPlayerButton.onClick.AddListener(() =>
         {
             serverGame.GameStateData.step = GameState.GiveWinnersPrize;
@@ -394,7 +403,6 @@ public class ServerSimulator : MonoBehaviour
                 m_ServerMessaging.EndGame(gameStateData.mainPlayerID, serverGame.GamePlayersAsJSON);
             }
         });
-
 
         if (serverGame.GameStateData.currentPlayerID != serverGame.GameStateData.mainPlayerID)
         {
@@ -626,5 +634,56 @@ public class ServerSimulator : MonoBehaviour
 #else
         return null;
 #endif
+    }
+    private void StartTrumpAndPredictionPhase(ServerGame serverGame)
+    {
+        serverGame.GameStateData.state = GameState.TrumpSelection;
+        TriggerPlayerChooseButtons(false);
+        m_TrumpSuitDropdown.interactable = true;
+        m_PredictionInput.interactable = true;
+        m_SubmitPredictionButton.interactable = true;
+
+        m_SubmitPredictionButton.onClick.RemoveAllListeners();
+        m_SubmitPredictionButton.onClick.AddListener(() =>
+        {
+            Suit chosenTrump = (Suit)m_TrumpSuitDropdown.value;
+            int prediction = int.Parse(m_PredictionInput.text);
+
+            if (prediction < 2 || prediction > 5)
+            {
+                Debug.LogWarning("Prediction must be between 2 and 5");
+                return;
+            }
+
+            serverGame.GameStateData.TrumpSuit = chosenTrump;
+            serverGame.GameStateData.PlayerPredictions[serverGame.GameStateData.currentPlayerID] = prediction;
+
+            // Move to next player or next phase
+            SetNextPlayer(serverGame);
+
+            if (AllPlayersMadePredictions(serverGame))
+            {
+                m_TrumpSuitDropdown.interactable = false;
+                m_PredictionInput.interactable = false;
+                m_SubmitPredictionButton.interactable = false;
+
+                // Proceed to next step (e.g., GivePlayersChips)
+                serverGame.GameStateData.state = GameState.GivePlayersChips;
+                TriggerPlayerChooseButtons(true);
+                m_GiveCardsToPlayers.interactable = true;
+            }
+        });
+    }
+
+    private bool AllPlayersMadePredictions(ServerGame serverGame)
+    {
+        var players = serverGame.GameStateData.players;
+        foreach (var player in players)
+        {
+            int playerId = int.Parse(player.id);
+            if (!serverGame.GameStateData.PlayerPredictions.ContainsKey(playerId))
+                return false;
+        }
+        return true;
     }
 }

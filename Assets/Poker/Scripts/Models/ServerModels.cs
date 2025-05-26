@@ -1,7 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
+using static ChipsColumn;
 
 [Serializable]
 public class GameStateBaseData
@@ -152,6 +153,9 @@ public class GameStateData : GameStateBaseData
     public ChipsColumn[] winnerPrize;
 
     private List<List<string>> savedPlayersCards;
+
+    public Suit TrumpSuit = Suit.None;  // the trump suit for the round
+    public Dictionary<int, int> PlayerPredictions = new Dictionary<int, int>();
 
     public bool GameIsEnded()
     {
@@ -339,7 +343,9 @@ public class GameStateData : GameStateBaseData
 
 public enum GameState
 {
-    Start = 0,
+    Start,
+    TrumpSelection,
+    Prediction,
     GivePlayersChips,
     PlayersBet,
     GivePlayersCards,
@@ -364,6 +370,7 @@ public class PlayerData
     public int prizeCost;
     public int turnCount;
     public bool isBot;
+    public int predictedTricks;
 
     public bool Choosed { get; internal set; }
 
@@ -373,7 +380,7 @@ public class PlayerData
         this.playerID = playerID;
         this.isBot = isBot;
     }
-
+  
     public PlayerData(int playerID, bool isBot,string id)
     {
         this.playerName = "Player " + playerID;
@@ -398,7 +405,10 @@ public class PlayerData
         fold = playerData.fold;
         prizeCost = playerData.prizeCost;
         this.isBot = playerData.isBot;
+
+        predictedTricks = playerData.predictedTricks;
     }
+
 }
 
 [Serializable]
@@ -475,5 +485,14 @@ public class ChipsColumn
     public void Clear()
     {
         count = 0;
+    }
+    public enum Suit
+    {
+        None,
+        Hearts,
+        Diamonds,
+        Clubs,
+        Spades,
+        Joker
     }
 }
