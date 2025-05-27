@@ -160,6 +160,15 @@ public class GameStateData : GameStateBaseData
 
     public Dictionary<int, int> PlayerBets = new Dictionary<int, int>();///player Bets
 
+
+    public int currentPlayerID;
+    public int trumpCallerID;
+    public int currentTrickNumber;
+    public List<PlayedCard> currentTrickCards = new();
+    public List<int> trickWinners = new();
+    public Dictionary<int, int> BonusBets = new();  // playerId -> bonus bet
+    public GameState state;
+    
     public bool GameIsEnded()
     {
         int inGamePlayersCount = 0;
@@ -355,6 +364,9 @@ public enum GameState
     PutTableCards,
     ShowPlayersCards,
     GiveWinnersPrize,
+    PlayTricks,
+    PokerShowdown,
+    TrickBetweenBet,
     NextPhaseAfterBetting,
     Ended
 }
@@ -498,5 +510,24 @@ public class ChipsColumn
         Clubs,
         Spades,
         Joker
+    }
+
+    [Serializable]
+    public class PlayedCard
+    {
+        public int playerId;
+        public Card card;
+
+        public PlayedCard(int playerID, Card card)
+        {
+            this.playerId = playerID;
+            this.card = card;
+        }
+    }
+    [Serializable]
+    public class Card
+    {
+        public string suit;  // e.g., "Hearts"
+        public int rank;     // e.g., 2-14 (where Ace = 14)
     }
 }

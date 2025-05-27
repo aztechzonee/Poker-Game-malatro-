@@ -727,7 +727,7 @@ public class ServerSimulator : MonoBehaviour
 
     private void StartDollarBettingPhase(ServerGame serverGame)
     {
-        Debug.Log("Start Dollar Batting...");
+        Debug.LogError("Start Dollar Batting...");
 
         m_PredictionStatusText.text = "Dollar Batting";
 
@@ -742,6 +742,7 @@ public class ServerSimulator : MonoBehaviour
             int currentPlayerId = serverGame.GameStateData.currentPlayerID;
             int betAmount = GetBetAmountFromDropdown();
 
+            Debug.LogError("Submit Dollar Button"+betAmount);
             if (betAmount <= 0)
             {
                 Debug.LogWarning("Invalid bet amount");
@@ -763,7 +764,7 @@ public class ServerSimulator : MonoBehaviour
                 SetNextPlayer(serverGame);
                 EnableDollarBettingUI(IsCurrentPlayerHuman(serverGame));
             }
-            Debug.LogError("my Player put dollar bet"+ AllPlayersPlacedBets(serverGame));
+            Debug.LogError("my Player put dollar bet" + AllPlayersPlacedBets(serverGame));
         });
 
 
@@ -862,5 +863,226 @@ public class ServerSimulator : MonoBehaviour
         serverGame.GameStateData.state = GameState.NextPhaseAfterBetting;
 
         // Your next game logic here...
+
+        StartTrickPhase(serverGame);
+    }
+
+
+    // Start Trick Phase Here
+
+    private void StartTrickPhase(ServerGame serverGame)
+    {
+        Debug.Log("Start Trick Phase after beting");
+
+        serverGame.GameStateData.currentTrickNumber = 1;
+        serverGame.GameStateData.currentTrickCards.Clear();
+        serverGame.GameStateData.state = GameState.PlayTricks;
+
+        // Trump caller starts
+        serverGame.GameStateData.currentPlayerID = serverGame.GameStateData.trumpCallerID;
+        UpdateCurrentPlayerUI(serverGame.GameStateData.currentPlayerID);
+
+        StartPlayerTurn(serverGame);
+    }
+    public List<PlayedCard> currentTrickCards;
+    public void OnCardPlayed(ServerGame serverGame, Card card)
+    {
+        int playerId = serverGame.GameStateData.currentPlayerID;
+
+        PlayedCard playerCard = new PlayedCard(playerId, card);
+
+        serverGame.GameStateData.currentTrickCards.Add(playerCard);
+
+        RemoveCardFromPlayerHand(playerId, card,serverGame);
+
+        if (currentTrickCards.Count == 4)
+        {
+            HandleTrickComplete(serverGame);
+        }
+        else
+        {
+            SetNextPlayer(serverGame);
+            StartPlayerTurn(serverGame);
+        }
+    }
+    public void RemoveCardFromPlayerHand(int playerId, Card card,ServerGame serverGame)
+    {
+        var player = serverGame.GameStateData.players.Find(p => p.playerID == playerId);
+        if (player != null)
+        {
+            string cardString = $"{card.rank}_{card.suit}";
+            player.cards.Remove(cardString);
+        }
+    }
+    private void HandleTrickComplete(ServerGame serverGame)
+    {
+        var leadSuit = serverGame.GameStateData.currentTrickCards[0].card.suit;
+
+        PlayedCard winningCard = serverGame.GameStateData.currentTrickCards[0];
+
+        foreach (var pc in serverGame.GameStateData.currentTrickCards)
+        {
+            if (pc.card.suit == serverGame.GameStateData.TrumpSuit.ToString())
+            {
+                if (winningCard.card.suit != serverGame.GameStateData.TrumpSuit.ToString() || pc.card.rank > winningCard.card.rank)
+                    winningCard = pc;
+            }
+            else if (pc.card.suit == leadSuit && winningCard.card.suit == leadSuit)
+            {
+                if (pc.card.rank > winningCard.card.rank)
+                    winningCard = pc;
+            }
+        }
+
+        int winningPlayerId = winningCard.playerId;
+        Debug.Log($"Player {winningPlayerId} wins the trick.");
+
+        // Store trick winner if you track scores
+        serverGame.GameStateData.trickWinners.Add(winningPlayerId);
+        serverGame.GameStateData.currentTrickCards.Clear();
+
+        serverGame.GameStateData.currentTrickNumber++;
+
+        if (serverGame.GameStateData.currentTrickNumber > 5)
+        {
+            EndTrickPhase(serverGame);
+        }
+        else
+        {
+            serverGame.GameStateData.currentPlayerID = winningPlayerId;
+            StartBetweenTrickBetting(serverGame); // Optional betting
+        }
+    }
+
+    private void StartBetweenTrickBetting(ServerGame serverGame)
+    {
+        Debug.Log("Starting optional betting between tricks...");
+
+        serverGame.GameStateData.state = GameState.TrickBetweenBet;
+
+        if (IsCurrentPlayerHuman(serverGame))
+        {
+            EnableDollarBettingUI(true);
+            submitDollarBet.onClick.RemoveAllListeners();
+            submitDollarBet.onClick.AddListener(() =>
+            {
+                int bet = GetBetAmountFromDropdown();
+                serverGame.GameStateData.BonusBets[serverGame.GameStateData.currentPlayerID] = bet;
+
+                EnableDollarBettingUI(false);
+                StartNextTrick(serverGame);
+            });
+        }
+        else
+        {
+            StartCoroutine(AIOptionalBetAndContinue(serverGame));
+        }
+    }
+    private IEnumerator AIOptionalBetAndContinue(ServerGame serverGame)
+    {
+        yield return new WaitForSeconds(2f);
+        int aiPlayerId = serverGame.GameStateData.currentPlayerID;
+        serverGame.GameStateData.BonusBets[aiPlayerId] = UnityEngine.Random.Range(0, 2) == 0 ? 5 : 10;
+
+        StartNextTrick(serverGame);
+    }
+    private void StartNextTrick(ServerGame serverGame)
+    {
+        Debug.Log($"Starting Trick #{serverGame.GameStateData.currentTrickNumber}");
+        serverGame.GameStateData.state = GameState.PlayTricks;
+
+        UpdateCurrentPlayerUI(serverGame.GameStateData.currentPlayerID);
+        StartPlayerTurn(serverGame);
+    }
+    private void EndTrickPhase(ServerGame serverGame)
+    {
+        Debug.Log("All tricks completed. Proceed to final poker showdown...");
+        serverGame.GameStateData.state = GameState.PokerShowdown;
+
+        // Proceed to poker hand phase, calculate trick winners, etc.
+    }
+
+    private void StartPlayerTurn(ServerGame serverGame)
+    {
+        int currentPlayerId = serverGame.GameStateData.currentPlayerID;
+
+        // Update UI to show current player's turn
+        UpdateCurrentPlayerUI(currentPlayerId);
+
+        // Check if current player is human or AI
+        if (IsCurrentPlayerHuman(serverGame))
+        {
+            // Enable player's hand UI so they can select a card
+            EnablePlayerHandUI(currentPlayerId, true);
+
+            // Maybe highlight playable cards, prompt player to pick a card
+            PromptPlayerToPlayCard(currentPlayerId);
+        }
+        else
+        {
+            // Disable player hand UI for AI players
+            EnablePlayerHandUI(currentPlayerId, false);
+
+            // For AI, start coroutine to choose and play a card automatically after a delay
+            StartCoroutine(AIPlayCardCoroutine(serverGame, currentPlayerId));
+        }
+    }
+    private IEnumerator AIPlayCardCoroutine(ServerGame serverGame, int aiPlayerId)
+    {
+        // Wait 1-2 seconds to simulate AI thinking
+        yield return new WaitForSeconds(UnityEngine.Random.Range(1f, 2f));
+
+        // Choose a card from AI player's hand (implement your own AI logic here)
+        Card aiCard = ChooseCardForAI(aiPlayerId, serverGame);
+
+        // Play the chosen card
+        OnCardPlayed(serverGame, aiCard);
+    }
+    private void EnablePlayerHandUI(int playerId, bool enabled)
+    {
+        // TODO: Implement UI logic to enable/disable card selection for the player.
+        Debug.Log($"EnablePlayerHandUI called for player {playerId} with enabled={enabled}");
+    }
+
+    private void PromptPlayerToPlayCard(int playerId)
+    {
+        // TODO: Implement UI logic to highlight cards or show a prompt for the player to play a card.
+        Debug.Log($"PromptPlayerToPlayCard called for player {playerId}");
+    }
+
+    private Card ChooseCardForAI(int playerId, ServerGame serverGame)
+    {
+        // TODO: Implement AI logic to select a card from the AI player's hand.
+
+        // Simple example: pick the first card in the player's hand
+        var player = serverGame.GameStateData.players.Find(p => p.playerID == playerId);
+        if (player == null || player.cards.Count == 0)
+        {
+            Debug.LogWarning("AI player has no cards!");
+            return null; // or handle gracefully
+        }
+
+        string cardString = player.cards[0]; // e.g. "10_Hearts"
+                                             // You will need a method to parse cardString back into Card
+        Card chosenCard = ParseCardFromString(cardString);
+        return chosenCard;
+    }
+
+    // Example helper to parse your card string back into a Card object
+    private Card ParseCardFromString(string cardString)
+    {
+        // Assuming format "rank_suit", e.g. "10_Hearts"
+        var parts = cardString.Split('_');
+        if (parts.Length != 2) return null;
+
+        // Parse rank
+        int rank = int.Parse(parts[0]); // or use Enum if rank is enum
+        string suitStr = parts[1];
+
+        // Create Card based on rank and suit string
+        Card card = new Card();
+        card.rank = rank;
+        card.suit = suitStr; // Or convert to your CardSuit enum/type if needed
+        return card;
     }
 }
